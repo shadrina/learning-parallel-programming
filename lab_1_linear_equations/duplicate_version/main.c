@@ -4,7 +4,7 @@
 #include <time.h>
 #include <mpi.h>
 
-const long long N = 2560;
+const int N = 2560;
 const double t = 0.01;
 const double e = 0.00001;
 
@@ -116,7 +116,11 @@ int main(int argc, char *argv[]) {
     nullify_vector(next, N);
     struct timespec start, end;
 
-    if (size != P + 1) return 0;
+    if (size != P + 1 && rank == 0) {
+        // TODO errno
+        printf("Please, make sure you use %d processes!\n", P + 1);
+        return 0;
+    }
     if (rank >= 0 && rank != P) {
         double *A = (double*)malloc((N / P) * N * sizeof(double));
         double *b = (double*)malloc(N * sizeof(double));
@@ -127,7 +131,7 @@ int main(int argc, char *argv[]) {
         nullify_vector(prev, N);
 
         clock_gettime(CLOCK_MONOTONIC_RAW, &start);
-        while (!check_part(A, b, next, rank)) {
+        while (!check_part(A, b, next, rank)) { 
             approximate_part(A, b, prev, next, rank);
             for (int i = rank * (N / P); i < (rank + 1) * (N / P); i++)
                 prev[i] = next[i];
@@ -135,17 +139,18 @@ int main(int argc, char *argv[]) {
         clock_gettime(CLOCK_MONOTONIC_RAW, &end);
         if (rank == 0)
             printf("Time taken: %lf sec.\n", end.tv_sec - start.tv_sec + 0.000000001 * (end.tv_nsec - start.tv_nsec));
+
         // At this stage, each thread has a vector with a portion of the calculated
         // coordinates of the required vector and zeros at the remaining positions.
         // All these vectors need to be sent to the service thread, which will add
         // them and calculate the final result.
+
         MPI_Send(next, N, MPI_DOUBLE, P, 123, MPI_COMM_WORLD);
 
         free(A);
         free(b);
         free(prev);
     }
-
     if (rank == P) {
         double required[N];
         nullify_vector(required, N);
