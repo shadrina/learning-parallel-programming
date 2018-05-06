@@ -7,20 +7,6 @@
 // (I + 1) % P == 0 !
 const int P = 8;
 
-double print_area(double *f) {
-    int index;
-    for (int i = 0; i < (I + 1) / P; i++) {
-        for (int j = 0; j <= J; j++) {
-            for (int k = 0; k <= K; k++) {
-                index = i * (I + 1) * (J + 1) + j * (K + 1) + k;
-                printf("%f ", f[index]);
-            }
-            printf("\n");
-        }
-        printf("\n");
-    }
-}
-
 double init_area(double *f) {
     int index;
     for (int i = 0; i <= I; i++)
@@ -32,16 +18,6 @@ double init_area(double *f) {
                 } else {
                     f[index] = 0;
                 }
-            }
-}
-
-double init_full_area(double *f) {
-    int index;
-    for (int i = 0; i <= I; i++)
-        for (int j = 0; j <= J; j++)
-            for (int k = 0; k <= K; k++) {
-                index = i * (J + 1) * (K + 1) + j * (K + 1) + k;
-                f[index] = boundary_func(i, j, k);
             }
 }
 
@@ -62,7 +38,6 @@ int main(int argc, char *argv[]) {
     int slice_area = (J + 1) * (K + 1);
 
     double *f;
-    double *f_real;
     double *fbuff[2];
     fbuff[0] = (double *)malloc(slice_width * slice_area * sizeof(double));
     fbuff[1] = (double *)malloc(slice_width * slice_area * sizeof(double));
@@ -70,10 +45,7 @@ int main(int argc, char *argv[]) {
 
     if (rank == 0) {
         f = (double *)malloc((I + 1) * (J + 1) * (K + 1) * sizeof(double));
-        f_real = (double *)malloc((I + 1) * (J + 1) * (K + 1) * sizeof(double));
-        count_denominator();
         init_area(f);
-        init_full_area(f_real);
     }
 
     MPI_Scatter(f, slice_width * slice_area, MPI_DOUBLE, fbuff[0], slice_width * slice_area, MPI_DOUBLE, 0, MPI_COMM_WORLD);
